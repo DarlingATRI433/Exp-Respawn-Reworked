@@ -1,0 +1,24 @@
+{
+    "exprespawnrework.configuration.title": "经验重生配置",
+    "exprespawnrework.configuration.section.exprespawnrework.server.toml": "经验重生配置",
+    "exprespawnrework.configuration.section.exprespawnrework.server.toml.title": "经验重生配置",
+    "exprespawnrework.configuration.items": "物品列表",
+
+    "exprespawnrework.respawn_here.button": "原地重生（消耗 %d 级经验）",
+    "exprespawnrework.respawn_here.button.item": "原地重生（消耗 %d 个 %s）",
+    "exprespawnrework.respawn_here.not_enough_exp": "您的经验值不足！",
+    "exprespawnrework.respawn_here.not_enough_items": "背包中物品不足！",
+    "exprespawnrework.respawn_here.no_location": "未找到死亡位置！",
+    "exprespawnrework.respawn_here.hardcore_not_allowed": "极限模式下不允许原地重生！",
+    "exprespawnrework.respawn_here.success": "已消耗 %d 级经验在死亡位置重生",
+    "exprespawnrework.respawn_here.success.item": "已消耗 %d 个 %s 在死亡位置重生",
+    "exprespawnrework.respawn_here.unsafe_location": "重生位置不安全，已重生至原重生点",
+
+    "exprespawnrework.config.section.respawn_here": "原地重生配置",
+    "exprespawnrework.config.respawn_here.expCost": "原地重生经验等级消耗",
+    "exprespawnrework.config.respawn_here.enabled": "启用原地重生功能",
+    "exprespawnrework.config.respawn_here.allowInHardcore": "极限模式允许重生",
+    "exprespawnrework.config.respawn_here.useItemMode": "切换物品消耗模式",
+    "exprespawnrework.config.respawn_here.itemId": "消耗物品ID",
+    "exprespawnrework.config.respawn_here.itemCount": "消耗物品数量"
+}
