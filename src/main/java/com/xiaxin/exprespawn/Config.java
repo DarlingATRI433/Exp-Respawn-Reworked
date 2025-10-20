@@ -42,5 +42,17 @@ public class Config {
             .comment("Number of items to consume for respawn")
             .defineInRange("itemCount", 1, 1, 64);
 
+    // Disable vanilla respawn button - forces players to use the "respawn here" feature
+    public static final ModConfigSpec.BooleanValue DISABLE_VANILLA_RESPAWN = RESPAWN_HERE_BUILDER
+            .translation("exprespawnrework.config.respawn_here.disableVanillaRespawn")
+            .comment("Disable vanilla respawn button, force players to use respawn here feature")
+            .define("disableVanillaRespawn", false);
+
+    // Item-only check mode - in item mode, just check inventory presence without consuming items
+    public static final ModConfigSpec.BooleanValue ITEM_CONSUMPTION_REQUIRE_ONLY = RESPAWN_HERE_BUILDER
+            .translation("exprespawnrework.config.respawn_here.itemConsumptionRequireOnly")
+            .comment("In item mode, only require items to be present in inventory (no consumption)")
+            .define("itemConsumptionRequireOnly", false);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 }

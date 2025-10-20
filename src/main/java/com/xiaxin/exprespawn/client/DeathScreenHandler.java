@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
+import java.util.Iterator;
 
 @EventBusSubscriber(modid = ExpRespawnRework.MODID, value = Dist.CLIENT)
 public class DeathScreenHandler {
@@ -43,6 +44,37 @@ public class DeathScreenHandler {
                 return;
             }
 
+            // 如果启用了禁用原版重生功能，隐藏原版重生按钮
+            if (Config.DISABLE_VANILLA_RESPAWN.get()) {
+                // 在初始化阶段隐藏原版重生按钮
+                try {
+                    var children = deathScreen.children();
+                    for (var child : children) {
+                        if (child instanceof Button button) {
+                            String buttonText = button.getMessage().getString().toLowerCase();
+                            // 更精确地识别原版重生按钮
+                            // 原版按钮通常只包含"respawn"或"重生"，不包含其他修饰词
+                            boolean isVanillaRespawnButton = 
+                                (buttonText.equals("respawn") || buttonText.equals("重生")) ||
+                                (buttonText.contains("respawn") && !buttonText.contains("here") && 
+                                 !buttonText.contains("原地") && !buttonText.contains("消耗") && 
+                                 !buttonText.contains("需要") && !buttonText.contains("require")) ||
+                                (buttonText.contains("重生") && !buttonText.contains("原地") && 
+                                 !buttonText.contains("消耗") && !buttonText.contains("需要"));
+                            
+                            if (isVanillaRespawnButton) {
+                                // 设置按钮为不可见
+                                button.visible = false;
+                                button.active = false;
+                                ExpRespawnRework.LOGGER.debug("初始化阶段隐藏原版重生按钮: {}", buttonText);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    ExpRespawnRework.LOGGER.debug("初始化阶段隐藏原版重生按钮时出错: {}", e.getMessage());
+                }
+            }
+
             // Check if player has death location
             if (!ClientDeathData.hasDeathLocation()) {
                 return;
@@ -55,7 +87,15 @@ public class DeathScreenHandler {
                 String itemId = Config.RESPAWN_HERE_ITEM_ID.get();
                 int itemCount = Config.RESPAWN_HERE_ITEM_COUNT.get();
                 String itemName = getItemDisplayName(itemId);
-                buttonText = Component.translatable("exprespawnrework.respawn_here.button.item", itemCount, itemName);
+                
+                // 根据配置决定按钮文本
+                if (Config.ITEM_CONSUMPTION_REQUIRE_ONLY.get()) {
+                    // 只需要物品存在模式
+                    buttonText = Component.translatable("exprespawnrework.respawn_here.button.item.require", itemCount, itemName);
+                } else {
+                    // 正常消耗模式
+                    buttonText = Component.translatable("exprespawnrework.respawn_here.button.item", itemCount, itemName);
+                }
             } else {
                 // Experience consumption mode
                 int requiredExp = Config.RESPAWN_HERE_EXP_COST.get();
@@ -72,7 +112,7 @@ public class DeathScreenHandler {
 
     @SubscribeEvent
     public static void onScreenRender(ScreenEvent.Render.Post event) {
-        if (event.getScreen() instanceof DeathScreen && respawnHereButton != null) {
+        if (event.getScreen() instanceof DeathScreen deathScreen && respawnHereButton != null) {
             // Update button state based on player's current resources
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.player != null) {

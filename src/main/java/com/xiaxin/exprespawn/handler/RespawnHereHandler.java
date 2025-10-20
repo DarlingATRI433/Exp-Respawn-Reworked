@@ -37,8 +37,14 @@ public class RespawnHereHandler {
 
         // Check requirements based on mode
         if (Config.RESPAWN_HERE_USE_ITEM_MODE.get()) {
-            // Item consumption mode
-            return hasRequiredItems(player);
+            // 物品模式
+            if (Config.ITEM_CONSUMPTION_REQUIRE_ONLY.get()) {
+                // 只需要物品存在模式，不消耗物品
+                return hasRequiredItems(player);
+            } else {
+                // 正常消耗模式
+                return hasRequiredItems(player);
+            }
         } else {
             // Experience consumption mode
             int requiredExp = Config.RESPAWN_HERE_EXP_COST.get();
@@ -74,36 +80,66 @@ public class RespawnHereHandler {
             // Death location is unsafe
             boolean isHardcore = player.serverLevel().getLevelData().isHardcore();
             
+            // 检查是否为虚空环境
+            ServerLevel level = player.getServer().getLevel(deathLocation.getDimension());
+            boolean isVoidDeath = deathLocation.getPosition().getY() < level.getMinBuildHeight();
+            
+            if (isVoidDeath) {
+                // 虚空环境死亡，发送特殊提示
+                player.sendSystemMessage(Component.translatable("exprespawnrework.respawn_here.void_location"));
+                ExpRespawnRework.LOGGER.info("玩家 {} 死于虚空环境，重生至原始重生点", 
+                    player.getName().getString());
+            } else {
+                // 其他不安全环境
+                player.sendSystemMessage(Component.translatable("exprespawnrework.respawn_here.unsafe_location"));
+                ExpRespawnRework.LOGGER.info("玩家 {} 死亡位置不安全，重生至原始重生点", 
+                    player.getName().getString());
+            }
+            
             if (isHardcore) {
-                // In hardcore mode, respawn at original spawn point but still consume resources
-                ExpRespawnRework.LOGGER.info("Hardcore player {} died in unsafe location, respawning at original spawn point with resource consumption", 
+                // 极限模式下，在原始重生点重生但仍消耗资源
+                ExpRespawnRework.LOGGER.info("极限模式玩家 {} 在不安全位置死亡，在原始重生点重生并消耗资源", 
                     player.getName().getString());
                 
-                // Consume resources even for unsafe location in hardcore mode
+                // 即使在极限模式下也要为不安全位置消耗资源
                 if (Config.RESPAWN_HERE_USE_ITEM_MODE.get()) {
-                    // Consume items
-                    consumeRequiredItems(player);
+                    // 物品模式
+                    if (!Config.ITEM_CONSUMPTION_REQUIRE_ONLY.get()) {
+                        // 只有在正常消耗模式下才消耗物品
+                        consumeRequiredItems(player);
+                    }
                 } else {
-                    // Deduct experience
+                    // 扣除经验
                     int cost = Config.RESPAWN_HERE_EXP_COST.get();
                     player.giveExperienceLevels(-cost);
                 }
                 
-                // Respawn at original spawn point
+                // 在原始重生点重生
                 handleUnsafeRespawnLocation(player);
             } else {
-                // Normal mode: respawn at original spawn point without consuming resources
+                // 普通模式：在原始重生点重生且不消耗资源
                 handleUnsafeRespawnLocation(player);
             }
             return;
         }
         
+        // 安全位置死亡，记录日志
+        ExpRespawnRework.LOGGER.info("玩家 {} 死亡位置安全，允许原地重生", 
+            player.getName().getString());
+        
         // Deduct cost based on mode
         if (Config.RESPAWN_HERE_USE_ITEM_MODE.get()) {
-            // Consume items
-            consumeRequiredItems(player);
+            // 物品模式
+            if (Config.ITEM_CONSUMPTION_REQUIRE_ONLY.get()) {
+                // 只需要物品存在模式，不消耗物品
+                ExpRespawnRework.LOGGER.info("玩家 {} 使用物品检测模式原地重生，不消耗物品", 
+                    player.getName().getString());
+            } else {
+                // 正常消耗模式
+                consumeRequiredItems(player);
+            }
         } else {
-            // Deduct experience
+            // 经验模式
             int cost = Config.RESPAWN_HERE_EXP_COST.get();
             player.giveExperienceLevels(-cost);
         }
@@ -203,6 +239,15 @@ public class RespawnHereHandler {
 
     /**
      * Check if the death location is safe for respawning
+     * 修改逻辑：允许在空中死亡时原地重生，但保持虚空检测不变
+     * 
+     * 环境检测规则：
+     * - 虚空环境（Y坐标低于世界最小高度）：不允许原地重生
+     * - 空中环境（下方是空气）：允许原地重生（修改后的逻辑）
+     * - 熔岩环境：不允许原地重生
+     * - 火环境：不允许原地重生  
+     * - 水环境：不允许原地重生
+     * - 超出世界高度：不允许原地重生
      */
     private static boolean isRespawnLocationSafe(ServerPlayer player, DeathLocation deathLocation) {
         try {
@@ -213,58 +258,60 @@ public class RespawnHereHandler {
             
             BlockPos pos = deathLocation.getPosition();
             
-            // Check if position is in void (Y < level min build height)
+            // 检查是否在虚空中（Y坐标低于世界最小高度）
             if (pos.getY() < level.getMinBuildHeight()) {
                 return false;
             }
             
-            // Check if position is above world height
+            // 检查是否超出世界最大高度
             if (pos.getY() >= level.getMaxBuildHeight()) {
                 return false;
             }
             
-            // Check the block at the position and below
+            // 检查当前位置和下方位置的方块状态
             BlockState blockState = level.getBlockState(pos);
             BlockState blockBelow = level.getBlockState(pos.below());
             
-            // Check if standing in lava
+            // 检查是否站在熔岩中
             if (blockState.getBlock() == Blocks.LAVA) {
                 return false;
             }
             
-            // Check if standing in fire
+            // 检查是否站在火中
             if (blockState.getBlock() == Blocks.FIRE) {
                 return false;
             }
             
-            // Check if in water/ocean (should trigger original spawn)
+            // 检查是否在水中（应该触发原始重生点）
             FluidState fluidState = blockState.getFluidState();
             if (!fluidState.isEmpty() && fluidState.isSource()) {
                 return false;
             }
             
-            // Check if the block below is solid enough to stand on
+            // 检查下方方块是否足够坚固可以站立
             if (!blockBelow.isSolidRender(level, pos.below())) {
-                // Check if it's a dangerous block
-                if (blockBelow.isAir() || blockBelow.getBlock() == Blocks.LAVA || blockBelow.getBlock() == Blocks.FIRE) {
+                // 修改逻辑：允许在空中重生，只检测真正的危险方块
+                if (blockBelow.getBlock() == Blocks.LAVA || blockBelow.getBlock() == Blocks.FIRE) {
                     return false;
                 }
+                // 移除对空气的检测，允许在空中重生
             }
             
             return true;
             
         } catch (Exception e) {
-            ExpRespawnRework.LOGGER.error("Error checking respawn location safety: {}", e.getMessage());
+            ExpRespawnRework.LOGGER.error("检查重生位置安全性时出错: {}", e.getMessage());
             return false;
         }
     }
 
     /**
      * Handle unsafe respawn location by respawning at original spawn point without consuming resources
+     * 处理不安全重生位置，在原始重生点重生
      */
     private static void handleUnsafeRespawnLocation(ServerPlayer player) {
         try {
-            ExpRespawnRework.LOGGER.info("Death location is unsafe for player {}, respawning at original spawn point", 
+            ExpRespawnRework.LOGGER.info("玩家 {} 的死亡位置不安全，在原始重生点重生", 
                 player.getName().getString());
             
             // Store original spawn data for restoration after respawn

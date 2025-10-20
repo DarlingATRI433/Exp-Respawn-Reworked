@@ -4,8 +4,9 @@
     "exprespawnrework.configuration.section.exprespawnrework.server.toml": "Exp Respawn Reborn Server Configs",
     "exprespawnrework.configuration.section.exprespawnrework.server.toml.title": "Exp Respawn Reborn Server Configs",
 
-    "exprespawnrework.respawn_here.button": "Respawn Here (Cost %d levels)",
+    "exprespawnrework.respawn_here.button": "Respawn Here (Consume %d levels)",
     "exprespawnrework.respawn_here.button.item": "Respawn Here (Consume %d %s)",
+    "exprespawnrework.respawn_here.button.item.require": "Respawn Here (Require %d %s)",
     "exprespawnrework.respawn_here.not_enough_exp": "You don't have enough experience levels to respawn here!",
     "exprespawnrework.respawn_here.not_enough_items": "You don't have enough items in your inventory!",
     "exprespawnrework.respawn_here.no_location": "No death location found!",
@@ -13,6 +14,8 @@
     "exprespawnrework.respawn_here.success": "Respawned at death location for %d experience levels",
     "exprespawnrework.respawn_here.success.item": "Respawned at death location by consuming %d %s",
     "exprespawnrework.respawn_here.unsafe_location": "Respawn location is unsafe, respawned at original spawn point",
+    "exprespawnrework.respawn_here.void_location": "Void environment detected, respawned at original spawn point",
+    "exprespawnrework.respawn_here.air_respawn": "Air environment check passed, respawn here allowed",
 
     "exprespawnrework.config.section.respawn_here": "Respawn Here Configuration",
     "exprespawnrework.config.respawn_here.expCost": "Respawn Here Experience Cost",
@@ -20,5 +23,7 @@
     "exprespawnrework.config.respawn_here.allowInHardcore": "Allow Respawn Here in Hardcore Mode",
     "exprespawnrework.config.respawn_here.useItemMode": "Enable Item Consumption Mode",
     "exprespawnrework.config.respawn_here.itemId": "Consumed Item ID",
-    "exprespawnrework.config.respawn_here.itemCount": "Consumed Item Count"
+    "exprespawnrework.config.respawn_here.itemCount": "Consumed Item Count",
+    "exprespawnrework.config.respawn_here.disableVanillaRespawn": "Disable Vanilla Respawn Button",
+    "exprespawnrework.config.respawn_here.itemConsumptionRequireOnly": "Item Mode Only Require Item Presence (No Consumption)"
 }
