@@ -6,6 +6,8 @@ import com.xiaxin.exprespawn.data.DeathLocation;
 import com.xiaxin.exprespawn.data.PlayerDeathData;
 import com.xiaxin.exprespawn.network.ClearDeathLocationPacket;
 import com.xiaxin.exprespawn.network.SyncDeathLocationPacket;
+import com.xiaxin.exprespawn.network.DeathAidRequestPacket;
+import com.xiaxin.exprespawn.data.DeathAidManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
@@ -26,7 +28,7 @@ public class PlayerDeathHandler {
 
     @SubscribeEvent
     public static void onPlayerDeath(LivingDeathEvent event) {
-        if (!Config.RESPAWN_HERE_ENABLED.get()) {
+        if (!Config.getBooleanValue(Config.RESPAWN_HERE_ENABLED, true)) {
             return;
         }
 
@@ -47,6 +49,14 @@ public class PlayerDeathHandler {
             // Sync death location to client
             PacketDistributor.sendToPlayer(player, new SyncDeathLocationPacket(deathLocation));
             
+            // 创建死亡援助请求并广播给所有玩家（如果启用）
+            if (Config.getBooleanValue(Config.DEATH_AID_ENABLED, true) && 
+                Config.getBooleanValue(Config.DEATH_AID_SHOW_MESSAGES, true)) {
+                DeathAidManager.createAidRequest(player);
+                DeathAidRequestPacket aidRequestPacket = new DeathAidRequestPacket(player.getUUID(), player.getName().getString());
+                PacketDistributor.sendToAllPlayers(aidRequestPacket);
+            }
+            
             ExpRespawnRework.LOGGER.debug("Player {} died at {} in dimension {}", 
                 player.getName().getString(), pos, dimension.location());
         }
@@ -57,8 +67,8 @@ public class PlayerDeathHandler {
         if (event.getEntity() instanceof ServerPlayer player) {
             // Handle unsafe respawn location first
             if (PlayerDeathData.hasUnsafeRespawnFlag(player)) {
-                // This is an unsafe location respawn - show special message
-                player.sendSystemMessage(Component.translatable("exprespawnrework.respawn_here.unsafe_location"));
+                // This is an unsafe location respawn - message was already sent in RespawnHereHandler
+                // so we don't send it again here to avoid duplicate messages
                 
                 // Check if this is a hardcore unsafe respawn that needs spectator mode handling
                 boolean isHardcoreUnsafeRespawn = PlayerDeathData.hasHardcoreUnsafeRespawnFlag(player);
@@ -88,6 +98,63 @@ public class PlayerDeathHandler {
                     ExpRespawnRework.LOGGER.info("Switched hardcore player {} to spectator mode for unsafe respawn (0.5s)", player.getName().getString());
                 }
                 
+                // 重要：恢复原始重生点数据，确保下次死亡时还能回到正确的重生点
+                if (PlayerDeathData.hasOriginalSpawnData(player)) {
+                    PlayerDeathData.OriginalSpawnData originalSpawn = PlayerDeathData.getOriginalSpawnData(player);
+                    player.setRespawnPosition(originalSpawn.dimension(), originalSpawn.position(), 0.0F, originalSpawn.forced(), false);
+                    PlayerDeathData.clearOriginalSpawnData(player);
+                    ExpRespawnRework.LOGGER.debug("Restored original spawn data for player {} after unsafe respawn", player.getName().getString());
+                }
+                
+                // 检查是否有待传送的死亡位置（水中/岩浆中/半砖上死亡的情况）
+                if (PlayerDeathData.hasPendingTeleportLocation(player)) {
+                    DeathLocation deathLocation = PlayerDeathData.getPendingTeleportLocation(player);
+                    if (deathLocation != null) {
+                        // 延迟1秒后执行传送命令，确保玩家完全重生
+                        player.getServer().tell(new net.minecraft.server.TickTask(player.getServer().getTickCount() + 20, () -> {
+                            if (player.isAlive()) {
+                                // 构建传送命令：/execute in <维度> run tp <玩家名> x y z
+                                ResourceKey<Level> deathDimension = deathLocation.getDimension();
+                                String dimensionId;
+                                
+                                // 根据维度类型获取正确的维度ID
+                                if (deathDimension == Level.OVERWORLD) {
+                                    dimensionId = "overworld";
+                                } else if (deathDimension == Level.NETHER) {
+                                    dimensionId = "the_nether";
+                                } else if (deathDimension == Level.END) {
+                                    dimensionId = "the_end";
+                                } else {
+                                    // 对于模组维度，使用location的path部分
+                                    dimensionId = deathDimension.location().getPath();
+                                }
+                                
+                                String playerName = player.getName().getString();
+                                BlockPos pos = deathLocation.getPosition();
+                                String command = String.format("execute in %s run tp %s %d %d %d", 
+                                    dimensionId, playerName, pos.getX(), pos.getY(), pos.getZ());
+                                
+                                ExpRespawnRework.LOGGER.info("执行传送命令: {} (玩家 {} 从维度 {} 传送到 {} 在维度 {})", 
+                                    command, playerName, player.level().dimension().location(), pos, dimensionId);
+                                
+                                // 执行命令
+                                player.getServer().getCommands().performPrefixedCommand(
+                                    player.getServer().createCommandSourceStack(),
+                                    command
+                                );
+                                
+                                PlayerDeathData.clearPendingTeleportLocation(player);
+                                ExpRespawnRework.LOGGER.info("已将玩家 {} 传送回死亡地点: {} 在维度 {}", 
+                                    playerName, pos, dimensionId);
+                            }
+                        }));
+                        
+                        ExpRespawnRework.LOGGER.info("计划将玩家 {} 传送回死亡地点", player.getName().getString());
+                    } else {
+                        PlayerDeathData.clearPendingTeleportLocation(player);
+                    }
+                }
+                
                 return;
             }
             
@@ -108,13 +175,13 @@ public class PlayerDeathHandler {
                     player.getName().getString());
                     
                 // Send success message based on mode
-                if (Config.RESPAWN_HERE_USE_ITEM_MODE.get()) {
-                    String itemId = Config.RESPAWN_HERE_ITEM_ID.get();
-                    int itemCount = Config.RESPAWN_HERE_ITEM_COUNT.get();
+                if (Config.getBooleanValue(Config.RESPAWN_HERE_USE_ITEM_MODE, false)) {
+                    String itemId = Config.getStringValue(Config.RESPAWN_HERE_ITEM_ID, "minecraft:apple");
+                    int itemCount = Config.getIntValue(Config.RESPAWN_HERE_ITEM_COUNT, 1);
                     String itemName = getItemDisplayName(itemId);
                     player.sendSystemMessage(Component.translatable("exprespawnrework.respawn_here.success.item", itemCount, itemName));
                 } else {
-                    int expCost = Config.RESPAWN_HERE_EXP_COST.get();
+                    int expCost = Config.getIntValue(Config.RESPAWN_HERE_EXP_COST, 10);
                     player.sendSystemMessage(Component.translatable("exprespawnrework.respawn_here.success", expCost));
                 }
                 

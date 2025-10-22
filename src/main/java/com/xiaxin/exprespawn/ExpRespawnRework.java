@@ -12,8 +12,10 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.minecraft.resources.ResourceLocation;
 import com.xiaxin.exprespawn.network.NetworkHandler;
+import com.xiaxin.exprespawn.command.DeathAidCommand;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(ExpRespawnRework.MODID)
@@ -41,6 +43,9 @@ public class ExpRespawnRework {
         
         // Register network packets
         modEventBus.addListener(NetworkHandler::register);
+        
+        // Register command event
+        NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
 
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
@@ -52,10 +57,16 @@ public class ExpRespawnRework {
         LOGGER.info("ExpRespawnRework mod loaded successfully!");
     }
 
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
         LOGGER.info("HELLO from server starting");
+    }
+    
+    @SubscribeEvent
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        // Register death aid command
+        DeathAidCommand.register(event.getDispatcher());
+        LOGGER.info("Registered death aid command");
     }
 }

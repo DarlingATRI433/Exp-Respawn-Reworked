@@ -25,7 +25,7 @@ public class DeathScreenHandler {
 
     @SubscribeEvent
     public static void onScreenOpen(ScreenEvent.Opening event) {
-        if (event.getScreen() instanceof DeathScreen && Config.RESPAWN_HERE_ENABLED.get()) {
+        if (event.getScreen() instanceof DeathScreen && Config.getBooleanValue(Config.RESPAWN_HERE_ENABLED, false)) {
             // Death screen is opening, we'll handle button creation in the init event
             
             // Check if we have death location data from server
@@ -38,14 +38,14 @@ public class DeathScreenHandler {
 
     @SubscribeEvent
     public static void onScreenInit(ScreenEvent.Init.Post event) {
-        if (event.getScreen() instanceof DeathScreen deathScreen && Config.RESPAWN_HERE_ENABLED.get()) {
+        if (event.getScreen() instanceof DeathScreen deathScreen && Config.getBooleanValue(Config.RESPAWN_HERE_ENABLED, false)) {
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.player == null) {
                 return;
             }
 
             // 如果启用了禁用原版重生功能，隐藏原版重生按钮
-            if (Config.DISABLE_VANILLA_RESPAWN.get()) {
+            if (Config.getBooleanValue(Config.DISABLE_VANILLA_RESPAWN, false)) {
                 // 在初始化阶段隐藏原版重生按钮
                 try {
                     var children = deathScreen.children();
@@ -82,14 +82,14 @@ public class DeathScreenHandler {
 
             // Create respawn here button with appropriate text based on mode
             Component buttonText;
-            if (Config.RESPAWN_HERE_USE_ITEM_MODE.get()) {
+            if (Config.getBooleanValue(Config.RESPAWN_HERE_USE_ITEM_MODE, false)) {
                 // Item consumption mode
-                String itemId = Config.RESPAWN_HERE_ITEM_ID.get();
-                int itemCount = Config.RESPAWN_HERE_ITEM_COUNT.get();
+                String itemId = Config.getStringValue(Config.RESPAWN_HERE_ITEM_ID, "minecraft:apple");
+                int itemCount = Config.getIntValue(Config.RESPAWN_HERE_ITEM_COUNT, 1);
                 String itemName = getItemDisplayName(itemId);
                 
                 // 根据配置决定按钮文本
-                if (Config.ITEM_CONSUMPTION_REQUIRE_ONLY.get()) {
+                if (Config.getBooleanValue(Config.ITEM_CONSUMPTION_REQUIRE_ONLY, false)) {
                     // 只需要物品存在模式
                     buttonText = Component.translatable("exprespawnrework.respawn_here.button.item.require", itemCount, itemName);
                 } else {
@@ -98,7 +98,7 @@ public class DeathScreenHandler {
                 }
             } else {
                 // Experience consumption mode
-                int requiredExp = Config.RESPAWN_HERE_EXP_COST.get();
+                int requiredExp = Config.getIntValue(Config.RESPAWN_HERE_EXP_COST, 10);
                 buttonText = Component.translatable("exprespawnrework.respawn_here.button", requiredExp);
             }
             
@@ -121,7 +121,7 @@ public class DeathScreenHandler {
                 
                 // Update tooltip if cannot respawn
                 if (!canRespawn) {
-                    String tooltipKey = Config.RESPAWN_HERE_USE_ITEM_MODE.get() ? 
+                    String tooltipKey = Config.getBooleanValue(Config.RESPAWN_HERE_USE_ITEM_MODE, false) ? 
                         "exprespawnrework.respawn_here.not_enough_items" : 
                         "exprespawnrework.respawn_here.not_enough_exp";
                     respawnHereButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
@@ -147,13 +147,13 @@ public class DeathScreenHandler {
     }
 
     private static boolean checkCanRespawnClient(Player player) {
-        if (Config.RESPAWN_HERE_USE_ITEM_MODE.get()) {
+        if (Config.getBooleanValue(Config.RESPAWN_HERE_USE_ITEM_MODE, false)) {
             // In item mode, we can't accurately check inventory from client side
             // So we just return true and let server side validation handle it
             return true;
         } else {
             // Experience mode - check experience levels
-            int requiredExp = Config.RESPAWN_HERE_EXP_COST.get();
+            int requiredExp = Config.getIntValue(Config.RESPAWN_HERE_EXP_COST, 10);
             return player.experienceLevel >= requiredExp;
         }
     }

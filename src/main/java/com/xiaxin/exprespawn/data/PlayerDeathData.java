@@ -15,6 +15,9 @@ public class PlayerDeathData {
     private static final Map<UUID, OriginalSpawnData> originalSpawnData = new HashMap<>();
     private static final Map<UUID, Boolean> unsafeRespawnFlags = new HashMap<>();
     private static final Map<UUID, Boolean> hardcoreUnsafeRespawnFlags = new HashMap<>();
+    // 存储需要传送回原死亡位置的玩家信息
+    private static final Map<UUID, DeathLocation> pendingTeleportLocations = new HashMap<>();
+    private static final Map<UUID, Boolean> needsTeleportAfterRespawnFlags = new HashMap<>();
 
     public static void setDeathLocation(Player player, DeathLocation location) {
         playerDeathLocations.put(player.getUUID(), location);
@@ -94,4 +97,38 @@ public class PlayerDeathData {
     
     // Record for storing original spawn data
     public record OriginalSpawnData(BlockPos position, boolean forced, ResourceKey<Level> dimension) {}
+    
+    // Pending teleport location management
+    public static void setPendingTeleportLocation(Player player, DeathLocation location) {
+        pendingTeleportLocations.put(player.getUUID(), location);
+        ExpRespawnRework.LOGGER.debug("Set pending teleport location for player {}: {}", player.getName().getString(), location);
+    }
+    
+    public static DeathLocation getPendingTeleportLocation(Player player) {
+        return pendingTeleportLocations.get(player.getUUID());
+    }
+    
+    public static boolean hasPendingTeleportLocation(Player player) {
+        return pendingTeleportLocations.containsKey(player.getUUID());
+    }
+    
+    public static void clearPendingTeleportLocation(Player player) {
+        pendingTeleportLocations.remove(player.getUUID());
+        ExpRespawnRework.LOGGER.debug("Cleared pending teleport location for player {}", player.getName().getString());
+    }
+    
+    // Needs teleport after respawn flag management
+    public static void setNeedsTeleportAfterRespawn(Player player, boolean flag) {
+        needsTeleportAfterRespawnFlags.put(player.getUUID(), flag);
+        ExpRespawnRework.LOGGER.debug("Set needs teleport after respawn flag for player {}: {}", player.getName().getString(), flag);
+    }
+    
+    public static boolean needsTeleportAfterRespawn(Player player) {
+        return needsTeleportAfterRespawnFlags.containsKey(player.getUUID()) && needsTeleportAfterRespawnFlags.get(player.getUUID());
+    }
+    
+    public static void clearNeedsTeleportAfterRespawn(Player player) {
+        needsTeleportAfterRespawnFlags.remove(player.getUUID());
+        ExpRespawnRework.LOGGER.debug("Cleared needs teleport after respawn flag for player {}", player.getName().getString());
+    }
 }

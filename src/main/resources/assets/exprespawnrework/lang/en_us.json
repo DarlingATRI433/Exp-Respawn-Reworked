@@ -15,7 +15,24 @@
     "exprespawnrework.respawn_here.success.item": "Respawned at death location by consuming %d %s",
     "exprespawnrework.respawn_here.unsafe_location": "Respawn location is unsafe, respawned at original spawn point",
     "exprespawnrework.respawn_here.void_location": "Void environment detected, respawned at original spawn point",
+    "exprespawnrework.respawn_here.water_respawn": "Water environment detected, respawned at original spawn point",
+    "exprespawnrework.respawn_here.lava_respawn": "Lava environment detected, respawned at original spawn point",
+    "exprespawnrework.respawn_here.slab_respawn": "Slab environment detected, respawned at original spawn point",
     "exprespawnrework.respawn_here.air_respawn": "Air environment check passed, respawn here allowed",
+
+    "exprespawnrework.death_aid.request_message": "Player %s has died. Do you want to help them respawn here?",
+    "exprespawnrework.death_aid.yes_button": "Yes",
+    "exprespawnrework.death_aid.no_button": "No",
+    "exprespawnrework.death_aid.request_expired": "Death aid request has expired",
+    "exprespawnrework.death_aid.already_responded": "You have already responded to this aid request",
+    "exprespawnrework.death_aid.success": "Successfully helped %s respawn at their death location",
+    "exprespawnrework.death_aid.declined": "You declined to help %s respawn",
+    "exprespawnrework.death_aid.not_enough_resources": "You don't have enough resources to help with respawn",
+    "exprespawnrework.death_aid.help_success": "Successfully helped %s respawn at their death location",
+    "exprespawnrework.death_aid.help_refused": "You refused to help %s respawn",
+    "exprespawnrework.death_aid.target_not_found": "Target player not found or not dead",
+    "exprespawnrework.death_aid.must_be_player": "This command can only be used by players",
+    "exprespawnrework.death_aid.command_error": "An error occurred while executing the death aid command",
 
     "exprespawnrework.config.section.respawn_here": "Respawn Here Configuration",
     "exprespawnrework.config.respawn_here.expCost": "Respawn Here Experience Cost",
@@ -25,5 +42,10 @@
     "exprespawnrework.config.respawn_here.itemId": "Consumed Item ID",
     "exprespawnrework.config.respawn_here.itemCount": "Consumed Item Count",
     "exprespawnrework.config.respawn_here.disableVanillaRespawn": "Disable Vanilla Respawn Button",
-    "exprespawnrework.config.respawn_here.itemConsumptionRequireOnly": "Item Mode Only Require Item Presence (No Consumption)"
+    "exprespawnrework.config.respawn_here.itemConsumptionRequireOnly": "Item Mode Only Require Item Presence (No Consumption)",
+
+    "exprespawnrework.config.section.death_aid": "Death Aid Configuration",
+    "exprespawnrework.config.death_aid.enabled": "Enable Death Aid Feature",
+    "exprespawnrework.config.death_aid.showMessages": "Show Death Aid Request Messages",
+    "exprespawnrework.config.death_aid.requestTimeout": "Death Aid Request Timeout (seconds)"
 }
